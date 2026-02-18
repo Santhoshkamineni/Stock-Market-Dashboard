@@ -1,0 +1,65 @@
+const apiKey = "demo"; // replace with real key if needed
+const symbols = ["AAPL", "GOOGL", "MSFT"];
+
+const grid = document.getElementById("stockGrid");
+const statusEl = document.getElementById("status");
+const errorEl = document.getElementById("error");
+
+async function fetchStocks() {
+  try {
+    statusEl.textContent = "Updating stock prices...";
+    errorEl.textContent = "";
+
+    grid.innerHTML = "";
+
+    for (const symbol of symbols) {
+      const res = await fetch(
+        `https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${apiKey}`,
+        { cache: "no-store" }
+      );
+
+      if (!res.ok) throw new Error("API failed");
+
+      const data = await res.json();
+
+      const change = data.d || 0;
+      const changeClass = change >= 0 ? "up" : "down";
+
+      const div = document.createElement("div");
+      div.className = "card";
+
+      div.innerHTML = `
+        <h2>${symbol}</h2>
+        <div class="price">$${(data.c || 0).toFixed(2)}</div>
+        <div class="change ${changeClass}">${change.toFixed(2)}</div>
+      `;
+
+      grid.appendChild(div);
+    }
+
+    const time = new Date().toLocaleTimeString();
+    statusEl.textContent = `Last updated: ${time} (auto refresh every 30s)`;
+  } catch (err) {
+    console.error(err);
+    errorEl.textContent =
+      "⚠️ Unable to load stock data. Use Live Server or add real API key.";
+    statusEl.textContent = "Update failed";
+  }
+}
+
+function addSymbol() {
+  const input = document.getElementById("symbolInput");
+  const val = input.value.trim().toUpperCase();
+  if (!val) return;
+
+  if (!symbols.includes(val)) symbols.push(val);
+  input.value = "";
+  fetchStocks();
+}
+
+function start() {
+  fetchStocks();
+  setInterval(fetchStocks, 30000);
+}
+
+window.onload = start;
