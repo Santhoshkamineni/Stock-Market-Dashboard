@@ -1,65 +1,78 @@
-const apiKey = "demo"; // replace with real key if needed
-const symbols = ["AAPL", "GOOGL", "MSFT"];
 
-const grid = document.getElementById("stockGrid");
-const statusEl = document.getElementById("status");
-const errorEl = document.getElementById("error");
+const API_KEY = "d6bdh5pr01qnr27kip70d6bdh5pr01qnr27kip7g";
 
-async function fetchStocks() {
-  try {
-    statusEl.textContent = "Updating stock prices...";
-    errorEl.textContent = "";
+const stockList = document.getElementById("stockList");
+const searchInput = document.getElementById("search");
+const searchBtn = document.getElementById("searchBtn");
 
-    grid.innerHTML = "";
+let chart;
+let interval;
 
-    for (const symbol of symbols) {
-      const res = await fetch(
-        `https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${apiKey}`,
-        { cache: "no-store" }
-      );
+async function fetchQuote(symbol) {
+  const res = await fetch(`https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${API_KEY}`);
+  return await res.json();
+}
 
-      if (!res.ok) throw new Error("API failed");
+async function fetchCandle(symbol) {
+  const now = Math.floor(Date.now() / 1000);
+  const dayAgo = now - 60 * 60 * 24;
 
-      const data = await res.json();
+  const res = await fetch(`https://finnhub.io/api/v1/stock/candle?symbol=${symbol}&resolution=30&from=${dayAgo}&to=${now}&token=${API_KEY}`);
+  return await res.json();
+}
 
-      const change = data.d || 0;
-      const changeClass = change >= 0 ? "up" : "down";
+async function loadStock(symbol) {
+  clearInterval(interval);
 
-      const div = document.createElement("div");
-      div.className = "card";
+  document.getElementById("stockName").textContent = symbol.toUpperCase();
 
-      div.innerHTML = `
-        <h2>${symbol}</h2>
-        <div class="price">$${(data.c || 0).toFixed(2)}</div>
-        <div class="change ${changeClass}">${change.toFixed(2)}</div>
-      `;
+  async function update() {
+    try {
+      const quote = await fetchQuote(symbol);
 
-      grid.appendChild(div);
+      if (!quote.c) {
+        document.getElementById("stockPrice").textContent = "Invalid Symbol";
+        return;
+      }
+
+      const price = quote.c;
+      const change = quote.d;
+
+      document.getElementById("stockPrice").textContent = `$${price}`;
+
+      const changeEl = document.getElementById("stockChange");
+      changeEl.textContent = `${change > 0 ? "+" : ""}${change.toFixed(2)}`;
+      changeEl.className = change >= 0 ? "green" : "red";
+
+      const candle = await fetchCandle(symbol);
+
+      if (chart) chart.destroy();
+
+      chart = new Chart(document.getElementById("chart"), {
+        type: "line",
+        data: {
+          labels: candle.t.map(t => new Date(t * 1000).toLocaleTimeString()),
+          datasets: [{ data: candle.c, tension: 0.4, borderWidth: 2 }]
+        },
+        options: { plugins: { legend: { display: false } }, scales: { x: { display: false } } }
+      });
+    } catch (err) {
+      console.error("API error:", err);
     }
-
-    const time = new Date().toLocaleTimeString();
-    statusEl.textContent = `Last updated: ${time} (auto refresh every 30s)`;
-  } catch (err) {
-    console.error(err);
-    errorEl.textContent =
-      "⚠️ Unable to load stock data. Use Live Server or add real API key.";
-    statusEl.textContent = "Update failed";
   }
+
+  await update();
+  interval = setInterval(update, 15000);
 }
 
-function addSymbol() {
-  const input = document.getElementById("symbolInput");
-  const val = input.value.trim().toUpperCase();
-  if (!val) return;
+searchBtn.addEventListener("click", () => {
+  const symbol = searchInput.value.trim();
+  if (symbol) loadStock(symbol);
+});
 
-  if (!symbols.includes(val)) symbols.push(val);
-  input.value = "";
-  fetchStocks();
-}
+searchInput.addEventListener("keypress", e => {
+  if (e.key === "Enter") searchBtn.click();
+});
 
-function start() {
-  fetchStocks();
-  setInterval(fetchStocks, 30000);
-}
-
-window.onload = start;
+// default
+loadStock("AAPL");
