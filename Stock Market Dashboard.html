@@ -1,26 +1,47 @@
+<!-- ================= index.html ================= -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Stock Market Dashboard</title>
+  <title>Live Stock Dashboard</title>
 
   <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
-  <h1>📈 Stock Market Dashboard</h1>
-  <div id="status" class="status">Loading stock data...</div>
+<header>📈 Live Stock Market Dashboard</header>
 
-  <div class="controls">
-    <input id="symbolInput" placeholder="Enter stock symbol (e.g., AAPL)" />
-    <button onclick="addSymbol()">Add</button>
-  </div>
+<div class="container">
+  <aside class="sidebar">
+    <input type="text" id="search" placeholder="Search ANY stock symbol (e.g., AAPL, INFY, TSLA)..." />
+    <button id="searchBtn">Search</button>
+    <ul class="stock-list" id="stockList"></ul>
+  </aside>
 
-  <div id="stockGrid" class="grid"></div>
+  <main class="main">
+    <div class="top-cards">
+      <div class="card">
+        <h3>Stock Name</h3>
+        <p id="stockName">--</p>
+      </div>
 
-  <div id="error" class="error"></div>
+      <div class="card">
+        <h3>Live Price</h3>
+        <p id="stockPrice">--</p>
+      </div>
 
-  <script src="script.js"></script>
+      <div class="card">
+        <h3>Change</h3>
+        <p id="stockChange">--</p>
+      </div>
+    </div>
+
+    <canvas id="chart" height="120"></canvas>
+  </main>
+</div>
+
+<script src="script.js"></script>
 </body>
 </html>
